@@ -1,93 +1,104 @@
-// backend/src/controllers/userController.js
 const bcrypt = require("bcrypt");
 const { pool } = require("../config/db");
 const { logAction } = require("../utils/auditLogger");
 
 exports.addUser = async (req, res) => {
-  const client = await pool.connect();
   try {
     const { email, password, fullName, role } = req.body;
-    const { tenant_id, id: currentUserId } = req.user;
+    const { tenant_id, id: userId } = req.user;
 
-    // 1. Check User Limit
-    const limitQuery = `
-      SELECT t.max_users, count(u.id) as current_count 
-      FROM tenants t 
-      LEFT JOIN users u ON u.tenant_id = t.id 
-      WHERE t.id = $1 
-      GROUP BY t.id
-    `;
-    const limitResult = await client.query(limitQuery, [tenant_id]);
-
-    if (limitResult.rows.length > 0) {
-      const { max_users, current_count } = limitResult.rows[0];
-      if (parseInt(current_count) >= max_users) {
-        return res.status(403).json({
-          success: false,
-          message: `User limit reached for your plan (Max: ${max_users})`,
-        });
-      }
-    }
-
-    // 2. Hash Password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashed = await bcrypt.hash(password, salt);
 
-    // 3. Create User
-    const insertQuery = `
-      INSERT INTO users (tenant_id, email, password_hash, full_name, role)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, email, full_name, role, is_active, created_at
-    `;
+    const result = await pool.query(
+      `INSERT INTO users (tenant_id, email, password_hash, full_name, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, full_name, role`,
+      [tenant_id, email, hashed, fullName, role || "user"]
+    );
 
-    const userRole = role === "tenant_admin" ? "tenant_admin" : "user";
-
-    const result = await client.query(insertQuery, [
-      tenant_id,
-      email,
-      hashedPassword,
-      fullName,
-      userRole,
-    ]);
-
-    const newUser = result.rows[0];
-
-    // 4. Log Action
-    logAction(tenant_id, currentUserId, "CREATE_USER", "user", newUser.id);
-
-    res.status(201).json({ success: true, data: newUser });
-  } catch (error) {
-    if (error.code === "23505") {
-      return res.status(409).json({
-        success: false,
-        message: "Email already exists in this tenant",
-      });
-    }
-    console.error(error);
-    res.status(500).json({ success: false, message: "Failed to add user" });
-  } finally {
-    client.release();
+    logAction(tenant_id, userId, "CREATE_USER", "user", result.rows[0].id);
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error adding user" });
   }
 };
 
 exports.getTenantUsers = async (req, res) => {
   try {
-    const { tenant_id } = req.user;
-
-    const query = `
-      SELECT id, email, full_name, role, is_active, created_at 
-      FROM users 
-      WHERE tenant_id = $1 
-      ORDER BY created_at DESC
-    `;
-    const result = await pool.query(query, [tenant_id]);
-
-    res.status(200).json({
+    const result = await pool.query(
+      "SELECT id, email, full_name, role FROM users WHERE tenant_id = $1",
+      [req.user.tenant_id]
+    );
+    res.json({
       success: true,
       data: { users: result.rows, total: result.rowCount },
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Failed to fetch users" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error fetching users" });
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { fullName } = req.body;
+    const result = await pool.query(
+      `UPDATE users SET full_name = COALESCE($1, full_name) WHERE id = $2 AND tenant_id = $3 RETURNING id, full_name`,
+      [fullName, userId, req.user.tenant_id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "User not found" });
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Update failed" });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (userId === req.user.id)
+      return res.status(400).json({ message: "Cannot delete self" });
+
+    const result = await pool.query(
+      `DELETE FROM users WHERE id = $1 AND tenant_id = $2 RETURNING id`,
+      [userId, req.user.tenant_id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "User not found" });
+    res.json({ success: true, message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Delete failed" });
+  }
+};
+// ... existing code ...
+
+exports.updateUser = async (req, res) => {
+  try {
+    const { fullName } = req.body;
+    const result = await pool.query(
+      `UPDATE users SET full_name = COALESCE($1, full_name) WHERE id = $2 AND tenant_id = $3 RETURNING id, full_name`,
+      [fullName, req.params.userId, req.user.tenant_id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "User not found" });
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ message: "Update failed" });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    if (req.params.userId === req.user.id)
+      return res.status(400).json({ message: "Cannot delete self" });
+    const result = await pool.query(
+      `DELETE FROM users WHERE id = $1 AND tenant_id = $2 RETURNING id`,
+      [req.params.userId, req.user.tenant_id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "User not found" });
+    res.json({ success: true, message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Delete failed" });
   }
 };

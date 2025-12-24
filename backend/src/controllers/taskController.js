@@ -1,79 +1,103 @@
-// backend/src/controllers/taskController.js
 const { pool } = require("../config/db");
 const { logAction } = require("../utils/auditLogger");
 
 exports.createTask = async (req, res) => {
   try {
-    const { projectId } = req.params; // from URL /projects/:projectId/tasks
-    const { title, description, priority, assignedTo, dueDate } = req.body;
+    const { projectId } = req.params;
+    const { title, priority } = req.body;
     const { tenant_id, id: userId } = req.user;
 
-    // 1. Verify Project belongs to Tenant
-    const projectCheck = await pool.query(
+    const projCheck = await pool.query(
       "SELECT id FROM projects WHERE id = $1 AND tenant_id = $2",
       [projectId, tenant_id]
     );
+    if (projCheck.rows.length === 0)
+      return res.status(404).json({ message: "Project not found" });
 
-    if (projectCheck.rows.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
-    }
+    const result = await pool.query(
+      `INSERT INTO tasks (project_id, tenant_id, title, priority, status) VALUES ($1, $2, $3, $4, 'todo') RETURNING *`,
+      [projectId, tenant_id, title, priority || "medium"]
+    );
 
-    // 2. Create Task
-    const insertQuery = `
-      INSERT INTO tasks (project_id, tenant_id, title, description, priority, assigned_to, due_date)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-
-    const result = await pool.query(insertQuery, [
-      projectId,
-      tenant_id,
-      title,
-      description,
-      priority || "medium",
-      assignedTo || null,
-      dueDate || null,
-    ]);
-
-    const newTask = result.rows[0];
-    logAction(tenant_id, userId, "CREATE_TASK", "task", newTask.id);
-
-    res.status(201).json({ success: true, data: newTask });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Failed to create task" });
+    logAction(tenant_id, userId, "CREATE_TASK", "task", result.rows[0].id);
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error creating task" });
   }
 };
 
 exports.getProjectTasks = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { tenant_id } = req.user;
-
-    // Verify access
-    const projectCheck = await pool.query(
-      "SELECT id FROM projects WHERE id = $1 AND tenant_id = $2",
-      [projectId, tenant_id]
+    const result = await pool.query(
+      "SELECT * FROM tasks WHERE project_id = $1 AND tenant_id = $2",
+      [projectId, req.user.tenant_id]
     );
-    if (projectCheck.rows.length === 0)
-      return res.status(404).json({ message: "Project not found" });
+    res.json({ success: true, data: { tasks: result.rows } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error fetching tasks" });
+  }
+};
 
-    // Fetch tasks with assignee name
-    const query = `
-      SELECT t.*, u.full_name as assignee_name 
-      FROM tasks t
-      LEFT JOIN users u ON t.assigned_to = u.id
-      WHERE t.project_id = $1 AND t.tenant_id = $2
-      ORDER BY t.priority DESC, t.due_date ASC
-    `;
+exports.updateTask = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { title, priority } = req.body;
+    const result = await pool.query(
+      `UPDATE tasks SET title = COALESCE($1, title), priority = COALESCE($2, priority) WHERE id = $3 AND tenant_id = $4 RETURNING *`,
+      [title, priority, taskId, req.user.tenant_id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "Task not found" });
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Update failed" });
+  }
+};
 
-    const result = await pool.query(query, [projectId, tenant_id]);
+exports.updateTaskStatus = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { status } = req.body;
+    const result = await pool.query(
+      `UPDATE tasks SET status = $1 WHERE id = $2 AND tenant_id = $3 RETURNING *`,
+      [status, taskId, req.user.tenant_id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "Task not found" });
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Status update failed" });
+  }
+};
+// ... existing code ...
 
-    res.status(200).json({ success: true, data: { tasks: result.rows } });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Failed to fetch tasks" });
+exports.updateTask = async (req, res) => {
+  try {
+    const { title, priority } = req.body;
+    const result = await pool.query(
+      `UPDATE tasks SET title = COALESCE($1, title), priority = COALESCE($2, priority) WHERE id = $3 AND tenant_id = $4 RETURNING *`,
+      [title, priority, req.params.taskId, req.user.tenant_id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "Task not found" });
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ message: "Update failed" });
+  }
+};
+
+exports.updateTaskStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const result = await pool.query(
+      `UPDATE tasks SET status = $1 WHERE id = $2 AND tenant_id = $3 RETURNING *`,
+      [status, req.params.taskId, req.user.tenant_id]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "Task not found" });
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ message: "Status update failed" });
   }
 };

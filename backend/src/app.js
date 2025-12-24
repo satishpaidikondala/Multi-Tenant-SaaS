@@ -6,6 +6,9 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const userRoutes = require("./routes/userRoutes");
+const tenantRoutes = require("./routes/tenantRoutes"); // <--- UNCOMMENTED
+const taskRoutes = require("./routes/taskRoutes");
+
 // const tenantRoutes = require('./routes/tenantRoutes'); // Uncomment later
 // const userRoutes = require('./routes/userRoutes');     // Uncomment later
 // const projectRoutes = require('./routes/projectRoutes'); // Uncomment later
@@ -19,16 +22,13 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json()); // Parse JSON bodies
 
 // Routes
-
-app.use("/api/auth", authRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/users", userRoutes);
-// app.use('/api/tenants', tenantRoutes); // Uncomment later
-// app.use('/api/users', userRoutes);     // Uncomment later
-// app.use('/api/projects', projectRoutes); // Uncomment later
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/projects", require("./routes/projectRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/tenants", require("./routes/tenantRoutes")); // Required
+app.use("/api/tasks", require("./routes/taskRoutes"));
 
 // Health Check (Required for Docker)
 app.get("/api/health", async (req, res) => {
