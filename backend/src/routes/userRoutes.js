@@ -1,18 +1,24 @@
-// backend/src/routes/userRoutes.js
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
-const { protect, restrictTo } = require("../middleware/authMiddleware");
+const authenticateToken = require("../middleware/authMiddleware");
+const authorizeRoles = require("../middleware/roleMiddleware");
 
-// Protect all routes
-router.use(protect);
+router.use(authenticateToken);
 
-// Routes
-// 1. Add User (Only Tenant Admin)
-router.post("/", restrictTo("tenant_admin"), userController.addUser);
+// Tenant Admin Only Routes
+router.post(
+  "/",
+  authorizeRoles("tenant_admin", "super_admin"),
+  userController.addUser
+);
+router.delete(
+  "/:id",
+  authorizeRoles("tenant_admin", "super_admin"),
+  userController.deleteUser
+);
 
-// 2. Get Users (Any Tenant Member)
-router.get("/", userController.getTenantUsers);
+// List Users (Accessible to all members of the tenant)
+router.get("/", userController.getUsers);
 
-// CRITICAL: This line must exist!
 module.exports = router;

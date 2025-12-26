@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middleware/authMiddleware");
 const taskController = require("../controllers/taskController");
+const authenticateToken = require("../middleware/authMiddleware");
 
-router.use(protect);
-router.put("/:taskId", taskController.updateTask);
+router.use(authenticateToken);
+
+// Update Status
 router.patch("/:taskId/status", taskController.updateTaskStatus);
+
 module.exports = router;
