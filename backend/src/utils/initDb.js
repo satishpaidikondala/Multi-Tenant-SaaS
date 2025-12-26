@@ -76,6 +76,28 @@ const runMigrations = async () => {
       ["user1@demo.com", userPass, tenantId, "user2@demo.com"]
     );
 
+    // --- NEW CODE ADDED BELOW ---
+
+    // E. Create Seed Project (Project Alpha)
+    const projectRes = await client.query(
+      `
+      INSERT INTO projects (tenant_id, name, description, status, created_by)
+      VALUES ($1, 'Project Alpha', 'First demo project', 'active', (SELECT id FROM users WHERE email = 'admin@demo.com'))
+      RETURNING id
+    `,
+      [tenantId]
+    );
+    const projectId = projectRes.rows[0].id;
+
+    // F. Create Seed Task (Seed Task 1)
+    await client.query(
+      `
+      INSERT INTO tasks (project_id, tenant_id, title, description, status, priority, assigned_to)
+      VALUES ($1, $2, 'Seed Task 1', 'Created via seeder', 'todo', 'high', (SELECT id FROM users WHERE email = 'user1@demo.com'))
+    `,
+      [projectId, tenantId]
+    );
+
     console.log("--- Database Initialization Complete ---");
   } catch (err) {
     console.error("Migration failed:", err);
