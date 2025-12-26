@@ -92,36 +92,3 @@ exports.deleteProject = async (req, res) => {
     res.status(500).json({ success: false, message: "Delete failed" });
   }
 };
-// ... existing code ...
-
-exports.updateProject = async (req, res) => {
-  try {
-    const { name, description, status } = req.body;
-    const result = await pool.query(
-      `UPDATE projects SET name = COALESCE($1, name), description = COALESCE($2, description), status = COALESCE($3, status) WHERE id = $4 AND tenant_id = $5 RETURNING *`,
-      [name, description, status, req.params.projectId, req.user.tenant_id]
-    );
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: "Project not found" });
-    res.json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ message: "Update failed" });
-  }
-};
-
-exports.deleteProject = async (req, res) => {
-  try {
-    await pool.query(`DELETE FROM tasks WHERE project_id = $1`, [
-      req.params.projectId,
-    ]);
-    const result = await pool.query(
-      `DELETE FROM projects WHERE id = $1 AND tenant_id = $2 RETURNING id`,
-      [req.params.projectId, req.user.tenant_id]
-    );
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: "Project not found" });
-    res.json({ success: true, message: "Project deleted" });
-  } catch (err) {
-    res.status(500).json({ message: "Delete failed" });
-  }
-};

@@ -1,4 +1,5 @@
 const { pool } = require("../config/db");
+const { logAction } = require("../utils/auditLogger");
 
 exports.getTenant = async (req, res) => {
   try {
@@ -20,6 +21,16 @@ exports.updateTenant = async (req, res) => {
       "UPDATE tenants SET name = $1 WHERE id = $2 RETURNING *",
       [name, req.params.tenantId]
     );
+    // Log action
+    if (result.rows.length > 0) {
+      logAction(
+        req.user.tenant_id,
+        req.user.id,
+        "UPDATE_TENANT",
+        "tenant",
+        req.params.tenantId
+      );
+    }
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ success: false, message: "Error" });

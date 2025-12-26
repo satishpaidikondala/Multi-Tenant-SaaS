@@ -37,7 +37,6 @@ exports.registerTenant = async (req, res) => {
 
     await client.query("COMMIT");
 
-    // Log Action (Fire & Forget)
     try {
       logAction(
         newTenant.id,
@@ -68,7 +67,6 @@ exports.login = async (req, res) => {
   try {
     const { email, password, tenantSubdomain } = req.body;
 
-    // 1. Find Tenant
     const tenantRes = await pool.query(
       "SELECT id, status FROM tenants WHERE subdomain = $1",
       [tenantSubdomain]
@@ -79,7 +77,6 @@ exports.login = async (req, res) => {
         .json({ success: false, message: "Tenant not found" });
     const tenant = tenantRes.rows[0];
 
-    // 2. Find User
     const userRes = await pool.query(
       "SELECT * FROM users WHERE email = $1 AND tenant_id = $2",
       [email, tenant.id]
@@ -90,7 +87,6 @@ exports.login = async (req, res) => {
         .json({ success: false, message: "User not found" });
     const user = userRes.rows[0];
 
-    // 3. Verify Password
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch)
       return res
@@ -99,7 +95,6 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user);
 
-    // 4. Log Action
     try {
       logAction(tenant.id, user.id, "LOGIN", "session", user.id);
     } catch (e) {}
@@ -119,19 +114,7 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    // FIX: Using req.user.id (from middleware) instead of req.user.userId
-    const query = `SELECT u.id, u.email, u.full_name, u.role, t.name as tenant_name FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.id = $1`;
-    const result = await pool.query(query, [req.user.id]);
-    res.status(200).json({ success: true, data: result.rows[0] });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Server Error" });
-  }
-};
-// ... existing code ...
-
-exports.getMe = async (req, res) => {
-  try {
-    // FIX: Use req.user.id (not userId) because your DB column is 'id'
+    // FIX: Using req.user.id (from middleware)
     const query = `SELECT u.id, u.email, u.full_name, u.role, t.name as tenant_name FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.id = $1`;
     const result = await pool.query(query, [req.user.id]);
     res.status(200).json({ success: true, data: result.rows[0] });

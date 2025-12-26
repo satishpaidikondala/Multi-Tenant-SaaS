@@ -70,35 +70,3 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ success: false, message: "Delete failed" });
   }
 };
-// ... existing code ...
-
-exports.updateUser = async (req, res) => {
-  try {
-    const { fullName } = req.body;
-    const result = await pool.query(
-      `UPDATE users SET full_name = COALESCE($1, full_name) WHERE id = $2 AND tenant_id = $3 RETURNING id, full_name`,
-      [fullName, req.params.userId, req.user.tenant_id]
-    );
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: "User not found" });
-    res.json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ message: "Update failed" });
-  }
-};
-
-exports.deleteUser = async (req, res) => {
-  try {
-    if (req.params.userId === req.user.id)
-      return res.status(400).json({ message: "Cannot delete self" });
-    const result = await pool.query(
-      `DELETE FROM users WHERE id = $1 AND tenant_id = $2 RETURNING id`,
-      [req.params.userId, req.user.tenant_id]
-    );
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: "User not found" });
-    res.json({ success: true, message: "User deleted" });
-  } catch (err) {
-    res.status(500).json({ message: "Delete failed" });
-  }
-};

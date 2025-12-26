@@ -14,7 +14,7 @@ services:
       - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -24,22 +24,21 @@ services:
     ports:
       - "5000:5000"
     environment:
+      NODE_ENV: development
+      PORT: 5000
       DB_HOST: database
       DB_PORT: 5432
       DB_NAME: saas_db
       DB_USER: postgres
       DB_PASSWORD: postgres
-      JWT_SECRET: supersecretkey_must_be_long_and_secure_for_production
+      JWT_SECRET: supersecretkey1234567890secure
+      JWT_EXPIRES_IN: 24h
       FRONTEND_URL: http://frontend:3000
     depends_on:
       database:
         condition: service_healthy
-    healthcheck:
-      test:
-        ["CMD", "wget", "--spider", "-q", "http://localhost:5000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    # We will add a startup script later to handle migrations/seeds automatically
+    command: npm start
 
   frontend:
     build: ./frontend
@@ -47,14 +46,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Use the service name 'backend' to talk inside docker network?
-      # NO! Browser runs on host, so it needs localhost:5000.
       REACT_APP_API_URL: http://localhost:5000/api
-    depends_on:
-      - backend
-    # This ensures hot-reloading works in Docker
+      # Note: Browser runs on host, so it accesses backend via localhost, not service name
     stdin_open: true
     tty: true
+    depends_on:
+      - backend
 
 volumes:
   db_data:

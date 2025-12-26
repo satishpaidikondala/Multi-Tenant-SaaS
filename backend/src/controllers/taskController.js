@@ -70,34 +70,3 @@ exports.updateTaskStatus = async (req, res) => {
     res.status(500).json({ success: false, message: "Status update failed" });
   }
 };
-// ... existing code ...
-
-exports.updateTask = async (req, res) => {
-  try {
-    const { title, priority } = req.body;
-    const result = await pool.query(
-      `UPDATE tasks SET title = COALESCE($1, title), priority = COALESCE($2, priority) WHERE id = $3 AND tenant_id = $4 RETURNING *`,
-      [title, priority, req.params.taskId, req.user.tenant_id]
-    );
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: "Task not found" });
-    res.json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ message: "Update failed" });
-  }
-};
-
-exports.updateTaskStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-    const result = await pool.query(
-      `UPDATE tasks SET status = $1 WHERE id = $2 AND tenant_id = $3 RETURNING *`,
-      [status, req.params.taskId, req.user.tenant_id]
-    );
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: "Task not found" });
-    res.json({ success: true, data: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ message: "Status update failed" });
-  }
-};
