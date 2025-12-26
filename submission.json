@@ -31,8 +31,17 @@
         ],
         "projects": [
           {
-            "name": "Website Redesign",
-            "description": "Overhaul of corporate website"
+            "name": "Project Alpha",
+            "description": "First demo project",
+            "tasks": [
+              {
+                "title": "Seed Task 1",
+                "description": "Created via seeder",
+                "status": "todo",
+                "priority": "high",
+                "assignedTo": "user1@demo.com"
+              }
+            ]
           }
         ]
       }
