@@ -10,7 +10,7 @@ const runMigrations = async () => {
 
     // 1. Run Migrations
     const migrationDir = path.join(__dirname, "../../migrations");
-    const files = fs.readdirSync(migrationDir).sort(); // Ensure order 001, 002...
+    const files = fs.readdirSync(migrationDir).sort();
 
     for (const file of files) {
       if (file.endsWith(".sql")) {
@@ -21,7 +21,7 @@ const runMigrations = async () => {
       }
     }
 
-    // 2. Check if Seed Data Exists (Prevent duplicate seeding)
+    // 2. Check if Seed Data Exists
     const res = await client.query(
       "SELECT count(*) FROM users WHERE role = $1",
       ["super_admin"]
@@ -31,24 +31,21 @@ const runMigrations = async () => {
       return;
     }
 
-    // 3. Insert Seed Data (Mandatory Credentials)
+    // 3. Insert Seed Data
     console.log("Seeding database...");
 
-    // Hash passwords
     const adminPass = await bcrypt.hash("Admin@123", 10);
     const demoPass = await bcrypt.hash("Demo@123", 10);
     const userPass = await bcrypt.hash("User@123", 10);
 
-    // A. Create Super Admin (tenant_id IS NULL)
+    // A. Create Super Admin
     await client.query(
-      `
-      INSERT INTO users (email, password_hash, full_name, role, tenant_id)
-      VALUES ($1, $2, $3, 'super_admin', NULL)
-    `,
+      `INSERT INTO users (email, password_hash, full_name, role, tenant_id)
+       VALUES ($1, $2, $3, 'super_admin', NULL)`,
       ["superadmin@system.com", adminPass, "Super Admin"]
     );
 
-    // B. Create Tenant "Demo Company"
+    // B. Create Tenant
     const tenantRes = await client.query(`
       INSERT INTO tenants (name, subdomain, status, subscription_plan, max_users, max_projects)
       VALUES ('Demo Company', 'demo', 'active', 'pro', 25, 15)
@@ -58,21 +55,15 @@ const runMigrations = async () => {
 
     // C. Create Tenant Admin
     await client.query(
-      `
-      INSERT INTO users (email, password_hash, full_name, role, tenant_id)
-      VALUES ($1, $2, $3, 'tenant_admin', $4)
-    `,
+      `INSERT INTO users (email, password_hash, full_name, role, tenant_id)
+       VALUES ($1, $2, $3, 'tenant_admin', $4)`,
       ["admin@demo.com", demoPass, "Demo Admin", tenantId]
     );
 
-    // D. Create 2 Regular Users
+    // D. Create Users
     await client.query(
-      `
-      INSERT INTO users (email, password_hash, full_name, role, tenant_id)
-      VALUES 
-      ($1, $2, 'User One', 'user', $3),
-      ($4, $2, 'User Two', 'user', $3)
-    `,
+      `INSERT INTO users (email, password_hash, full_name, role, tenant_id)
+       VALUES ($1, $2, 'User One', 'user', $3), ($4, $2, 'User Two', 'user', $3)`,
       ["user1@demo.com", userPass, tenantId, "user2@demo.com"]
     );
 
@@ -87,7 +78,7 @@ const runMigrations = async () => {
     );
     const projectId = projectRes.rows[0].id;
 
-    // F. Create Seed Task (Seed Task 1)
+    // F. Create Seed Task
     await client.query(
       `
       INSERT INTO tasks (project_id, tenant_id, title, description, status, priority, assigned_to)
