@@ -1,4 +1,3 @@
-// frontend/src/pages/Dashboard.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
@@ -19,9 +18,12 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [newProject, setNewProject] = useState({ name: "", description: "" });
+  const [newProject, setNewProject] = useState({
+    name: "",
+    description: "",
+    status: "active",
+  });
 
-  // Load projects on mount
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -31,10 +33,7 @@ const Dashboard = () => {
       const res = await api.get("/projects");
       setProjects(res.data.data.projects);
     } catch (err) {
-      console.error("Failed to fetch projects", err);
-      if (err.response && err.response.status === 401) {
-        handleLogout();
-      }
+      if (err.response && err.response.status === 401) handleLogout();
     }
   };
 
@@ -43,10 +42,10 @@ const Dashboard = () => {
     try {
       await api.post("/projects", newProject);
       setShowModal(false);
-      setNewProject({ name: "", description: "" });
-      fetchProjects(); // Refresh list
+      setNewProject({ name: "", description: "", status: "active" });
+      fetchProjects();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to create project");
+      alert("Failed to create project");
     }
   };
 
@@ -57,15 +56,12 @@ const Dashboard = () => {
 
   return (
     <>
-      {/* Navigation */}
-      <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
+      <Navbar bg="dark" variant="dark" className="mb-4">
         <Container>
           <Navbar.Brand>SaaS Platform</Navbar.Brand>
-          <Nav className="ms-auto">
-            <Button variant="outline-light" onClick={handleLogout}>
-              Logout
-            </Button>
-          </Nav>
+          <Button variant="outline-light" onClick={handleLogout}>
+            Logout
+          </Button>
         </Container>
       </Navbar>
 
@@ -77,54 +73,48 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Project List */}
         <Row>
-          {projects.length === 0 ? (
-            <Col>
-              <div className="alert alert-info">
-                No projects found. Create one to get started!
-              </div>
+          {projects.map((project) => (
+            <Col md={4} key={project.id} className="mb-3">
+              <Card
+                className="h-100 shadow-sm"
+                // --- FIX STARTS HERE ---
+                style={{ cursor: "pointer", transition: "transform 0.2s" }}
+                onClick={() => navigate(`/projects/${project.id}`)}
+                // --- FIX ENDS HERE ---
+              >
+                <Card.Body>
+                  <div className="d-flex justify-content-between">
+                    <Card.Title>{project.name}</Card.Title>
+                    <Badge
+                      bg={project.status === "active" ? "success" : "secondary"}
+                    >
+                      {project.status}
+                    </Badge>
+                  </div>
+                  <Card.Text className="text-muted mt-2">
+                    {project.description}
+                  </Card.Text>
+                  <hr />
+                  <div className="d-flex justify-content-between text-muted small">
+                    <span>Tasks: {project.task_count || 0}</span>
+                    <span>Creator: {project.creator_name}</span>
+                  </div>
+                </Card.Body>
+              </Card>
             </Col>
-          ) : (
-            projects.map((project) => (
-              <Col md={4} key={project.id} className="mb-3">
-                <Card className="h-100 shadow-sm">
-                  <Card.Body>
-                    <div className="d-flex justify-content-between align-items-start">
-                      <Card.Title>{project.name}</Card.Title>
-                      <Badge
-                        bg={
-                          project.status === "active" ? "success" : "secondary"
-                        }
-                      >
-                        {project.status}
-                      </Badge>
-                    </div>
-                    <Card.Text className="text-muted mt-2">
-                      {project.description || "No description"}
-                    </Card.Text>
-                    <hr />
-                    <div className="d-flex justify-content-between text-muted small">
-                      <span>Tasks: {project.task_count || 0}</span>
-                      <span>Creator: {project.creator_name}</span>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))
-          )}
+          ))}
         </Row>
       </Container>
 
-      {/* Create Project Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Create New Project</Modal.Title>
+          <Modal.Title>Create Project</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form onSubmit={handleCreateProject}>
             <Form.Group className="mb-3">
-              <Form.Label>Project Name</Form.Label>
+              <Form.Label>Name</Form.Label>
               <Form.Control
                 type="text"
                 required
@@ -138,15 +128,14 @@ const Dashboard = () => {
               <Form.Label>Description</Form.Label>
               <Form.Control
                 as="textarea"
-                rows={3}
                 value={newProject.description}
                 onChange={(e) =>
                   setNewProject({ ...newProject, description: e.target.value })
                 }
               />
             </Form.Group>
-            <Button variant="primary" type="submit" className="w-100">
-              Create Project
+            <Button type="submit" className="w-100">
+              Create
             </Button>
           </Form>
         </Modal.Body>

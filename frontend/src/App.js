@@ -1,4 +1,3 @@
-// frontend/src/App.js
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -6,32 +5,28 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
+import "bootstrap/dist/css/bootstrap.min.css";
 
-// Import Pages (We will create these next)
+// Import Pages
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import ProjectDetails from "./pages/ProjectDetails"; // <--- NEW IMPORT
 
-// Simple Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!token) return <Navigate to="/login" replace />;
   return children;
 };
 
 function App() {
   return (
     <Router>
-      <div className="container mt-4">
+      <div className="App">
         <Routes>
-          {/* Public Routes */}
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
@@ -41,7 +36,16 @@ function App() {
             }
           />
 
-          {/* Default Redirect */}
+          {/* --- NEW ROUTE FOR PROJECT DETAILS --- */}
+          <Route
+            path="/projects/:id"
+            element={
+              <ProtectedRoute>
+                <ProjectDetails />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
