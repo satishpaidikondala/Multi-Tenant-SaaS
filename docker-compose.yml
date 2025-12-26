@@ -33,12 +33,17 @@ services:
       DB_PASSWORD: postgres
       JWT_SECRET: supersecretkey1234567890secure
       JWT_EXPIRES_IN: 24h
-      # CHANGE THIS LINE BELOW:
       FRONTEND_URL: http://localhost:3000
     depends_on:
       database:
         condition: service_healthy
     command: npm start
+    # --- ADDED HEALTHCHECK BELOW ---
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build: ./frontend
@@ -47,7 +52,7 @@ services:
       - "3000:3000"
     environment:
       REACT_APP_API_URL: http://localhost:5000/api
-      WDS_SOCKET_PORT: 0 # <--- ADD THIS LINE
+      WDS_SOCKET_PORT: 0
     stdin_open: true
     tty: true
     depends_on:
