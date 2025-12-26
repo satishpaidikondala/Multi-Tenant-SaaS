@@ -78,10 +78,8 @@ const Dashboard = () => {
             <Col md={4} key={project.id} className="mb-3">
               <Card
                 className="h-100 shadow-sm"
-                // --- FIX STARTS HERE ---
                 style={{ cursor: "pointer", transition: "transform 0.2s" }}
                 onClick={() => navigate(`/projects/${project.id}`)}
-                // --- FIX ENDS HERE ---
               >
                 <Card.Body>
                   <div className="d-flex justify-content-between">

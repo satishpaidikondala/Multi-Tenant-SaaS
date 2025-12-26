@@ -5,7 +5,6 @@ import {
   Container,
   Button,
   Card,
-  ListGroup,
   Badge,
   Modal,
   Form,
@@ -17,7 +16,6 @@ const ProjectDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
-  const [project, setProject] = useState({ name: "Loading..." });
   const [showModal, setShowModal] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", priority: "medium" });
 
@@ -27,11 +25,8 @@ const ProjectDetails = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch tasks for this project
       const taskRes = await api.get(`/projects/${id}/tasks`);
       setTasks(taskRes.data.data.tasks);
-      // Note: In a real app, you might want a separate endpoint to get single project details
-      // For now, we rely on the tasks call or pass state, but let's assume tasks load fine.
     } catch (err) {
       console.error(err);
     }
@@ -43,7 +38,7 @@ const ProjectDetails = () => {
       await api.post(`/projects/${id}/tasks`, newTask);
       setShowModal(false);
       setNewTask({ title: "", priority: "medium" });
-      fetchData(); // Refresh tasks
+      fetchData();
     } catch (err) {
       alert("Failed to add task");
     }
@@ -105,7 +100,7 @@ const ProjectDetails = () => {
                         handleStatusChange(task.id, e.target.value)
                       }
                     >
-                      <option value="pending">Pending</option>
+                      <option value="todo">To Do</option>
                       <option value="in_progress">In Progress</option>
                       <option value="completed">Completed</option>
                     </select>
@@ -117,7 +112,6 @@ const ProjectDetails = () => {
         )}
       </Row>
 
-      {/* Add Task Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Add New Task</Modal.Title>

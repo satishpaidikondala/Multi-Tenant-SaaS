@@ -11,7 +11,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import ProjectDetails from "./pages/ProjectDetails"; // <--- NEW IMPORT
+import ProjectDetails from "./pages/ProjectDetails";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -36,7 +36,7 @@ function App() {
             }
           />
 
-          {/* --- NEW ROUTE FOR PROJECT DETAILS --- */}
+          {/* New Route for Task Management */}
           <Route
             path="/projects/:id"
             element={
