@@ -1,8 +1,20 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE tenant_status AS ENUM ('active', 'suspended', 'trial');
-CREATE TYPE sub_plan AS ENUM ('free', 'pro', 'enterprise');
+-- 1. Safely create 'tenant_status' type
+DO $$ BEGIN
+    CREATE TYPE tenant_status AS ENUM ('active', 'suspended', 'trial');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
+-- 2. Safely create 'sub_plan' type
+DO $$ BEGIN
+    CREATE TYPE sub_plan AS ENUM ('free', 'pro', 'enterprise');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- 3. Create Table
 CREATE TABLE IF NOT EXISTS tenants (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
