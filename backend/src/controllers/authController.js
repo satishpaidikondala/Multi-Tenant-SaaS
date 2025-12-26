@@ -70,12 +70,10 @@ exports.registerTenant = async (req, res) => {
     // Handle duplicate email error
     if (error.code === "23505") {
       // Postgres unique violation code
-      return res
-        .status(409)
-        .json({
-          success: false,
-          message: "Email already registered in this tenant",
-        });
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered in this tenant",
+      });
     }
 
     res.status(error.message === "Subdomain already exists" ? 409 : 500).json({
@@ -112,20 +110,7 @@ exports.login = async (req, res) => {
       tenantId = tenantRes.rows[0].id;
     }
 
-    // B. Verify User (Super admins might login without specific subdomain initially, but for now we assume standard flow)
-    // Note: If super_admin, tenantId is NULL in users table.
-
-    // Complex query to handle both Tenant Users (check tenant_id) and Super Admins (tenant_id IS NULL)
-    // However, for simplicity and security, we first look up by email.
-
-    // STRICT ISOLATION: User must exist in the REQUESTED tenant (unless super_admin)
-    let query = "SELECT * FROM users WHERE email = $1";
-    let params = [email];
-
-    // If not super admin logic, strictly enforce tenant_id
-    // But we don't know if they are super admin yet.
-    // Best approach: Find user by email and tenant_id first.
-
+    // B. Verify User
     const userResult = await pool.query(
       `SELECT * FROM users WHERE email = $1 AND (tenant_id = $2 OR role = 'super_admin')`,
       [email, tenantId]
