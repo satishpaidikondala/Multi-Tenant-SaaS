@@ -3,23 +3,18 @@ require("dotenv").config();
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+  const token = authHeader && authHeader.split(" ")[1];
 
-  if (!token) {
+  if (!token)
     return res
       .status(401)
       .json({ success: false, message: "Access token required" });
-  }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
+    if (err)
       return res
         .status(403)
         .json({ success: false, message: "Invalid or expired token" });
-    }
-
-    // Attach user payload to request
-    // payload contains: { userId, tenantId, role }
     req.user = user;
     next();
   });

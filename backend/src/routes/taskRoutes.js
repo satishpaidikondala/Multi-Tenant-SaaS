@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const taskController = require("../controllers/taskController");
 const authenticateToken = require("../middleware/authMiddleware");
+const tenantController = require("../controllers/tenantController");
 
 router.use(authenticateToken);
 
-// Update Status
-router.patch("/:taskId/status", taskController.updateTaskStatus);
+router.get("/:tenantId", tenantController.getTenant);
+router.put("/:tenantId", tenantController.updateTenant);
 
 module.exports = router;
