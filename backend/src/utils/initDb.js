@@ -76,8 +76,6 @@ const runMigrations = async () => {
       ["user1@demo.com", userPass, tenantId, "user2@demo.com"]
     );
 
-    // --- NEW CODE ADDED BELOW ---
-
     // E. Create Seed Project (Project Alpha)
     const projectRes = await client.query(
       `
