@@ -4,19 +4,7 @@
 
 The system follows a classic 3-tier web architecture, containerized with Docker.
 
-```mermaid
-graph TD
-    Client[Client Browser] <-->|HTTPS/JSON| LoadBalancer[Nginx / Docker Proxy]
-    LoadBalancer <-->|Port 3000| Frontend[Frontend Container (React)]
-    LoadBalancer <-->|Port 5000| Backend[Backend Container (Node.js/Express)]
-    Backend <-->|Port 5432| DB[Database Container (PostgreSQL)]
-    
-    subgraph Docker Network
-        Frontend
-        Backend
-        DB
-    end
-```
+![System Architecture](./images/system-architecture.jpg)
 
 ### Components
 1.  **Frontend**: React SPA served via a lightweight server (or dev server in this setup). Handles UI logic, Auth state, and calls Backend APIs.
@@ -30,65 +18,7 @@ graph TD
 
 ## 2. Database Schema Design (ERD)
 
-```mermaid
-erDiagram
-    TENANTS ||--|{ USERS : "has"
-    TENANTS ||--|{ PROJECTS : "has"
-    TENANTS ||--|{ TASKS : "has"
-    TENANTS {
-        uuid id PK
-        string name
-        string subdomain UK
-        enum status
-        enum subscription_plan
-        int max_users
-        int max_projects
-        timestamp created_at
-    }
-
-    USERS ||--|{ PROJECTS : "creates"
-    USERS ||--|{ TASKS : "assigned_to"
-    USERS {
-        uuid id PK
-        uuid tenant_id FK
-        string email
-        string password_hash
-        string full_name
-        enum role
-        bool is_active
-    }
-
-    PROJECTS ||--|{ TASKS : "contains"
-    PROJECTS {
-        uuid id PK
-        uuid tenant_id FK
-        string name
-        string description
-        enum status
-        uuid created_by FK
-    }
-
-    TASKS {
-        uuid id PK
-        uuid project_id FK
-        uuid tenant_id FK
-        string title
-        string description
-        enum status
-        enum priority
-        uuid assigned_to FK
-        date due_date
-    }
-    
-    AUDIT_LOGS {
-        uuid id PK
-        uuid tenant_id FK
-        uuid user_id FK
-        string action
-        string entity_type
-        string entity_id
-    }
-```
+![Database Schema](./images/database-erd.jpg)
 
 ---
 
