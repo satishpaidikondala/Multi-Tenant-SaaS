@@ -59,6 +59,12 @@ const Dashboard = () => {
       <Navbar bg="dark" variant="dark" className="mb-4">
         <Container>
           <Navbar.Brand>SaaS Platform</Navbar.Brand>
+          <Nav className="me-auto">
+            <Nav.Link onClick={() => navigate("/dashboard")}>Projects</Nav.Link>
+            {JSON.parse(localStorage.getItem("user"))?.role === "tenant_admin" && (
+                <Nav.Link onClick={() => navigate("/users")}>Users</Nav.Link>
+            )}
+          </Nav>
           <Button variant="outline-light" onClick={handleLogout}>
             Logout
           </Button>

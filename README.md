@@ -1,125 +1,98 @@
 # Multi-Tenant SaaS Platform
 
-## 📖 Project Overview
+A production-ready, multi-tenant SaaS application with project and task management capabilities. It features strict data isolation, role-based access control (RBAC), and subscription management.
 
-A production-ready, multi-tenant SaaS application built with **React, Node.js, and PostgreSQL**. This platform allows organizations (tenants) to register, manage their teams, create projects, and track tasks with complete **data isolation**. It implements **Role-Based Access Control (RBAC)** and subscription limits, all containerized with **Docker** for one-command deployment.
+## 🚀 Features
 
-**Target Audience:** Organizations needing a private workspace for project management.
+- **Multi-Tenancy**: Data isolation via `tenant_id` and subdomain support.
+- **Authentication**: JWT-based stateless auth for security.
+- **RBAC**: Three distinct roles: Super Admin, Tenant Admin, User.
+- **Project Management**: Create projects, assign tasks, and track status.
+- **Subscription Limits**: Enforces user and project limits based on plan (Free, Pro, Enterprise).
+- **Dockerized**: Full stack (DB, Backend, Frontend) runs with one command.
+- **Audit Logging**: Tracks critical actions for compliance.
+- **Responsive UI**: Modern React frontend with Bootstrap.
 
----
+## 🛠 Technology Stack
 
-## ✨ Key Features
+- **Frontend**: React 19, Bootstrap 5, Axios.
+- **Backend**: Node.js 22, Express 5.
+- **Database**: PostgreSQL 15.
+- **DevOps**: Docker & Docker Compose.
 
-- **Multi-Tenancy Architecture:** Complete data isolation using `tenant_id` at the database level.
-- **Secure Authentication:** JWT-based stateless authentication with 24-hour expiry.
-- **Role-Based Access Control (RBAC):** Three distinct roles (Super Admin, Tenant Admin, User).
-- **Subscription Management:** Enforces limits on Users and Projects based on plans (Free, Pro, Enterprise).
-- **Project & Task Management:** Create projects, assign tasks, and track status (Todo, In Progress, Completed).
-- **Organization Management:** Tenant Admins can manage their users; Super Admins can manage tenants.
-- **Audit Logging:** Critical actions are logged for security and compliance.
-- **Dockerized Deployment:** Fully containerized Frontend, Backend, and Database.
+## 🏗 Architecture
 
----
+The system uses a shared-database, shared-schema architecture where every table has a `tenant_id` column. Middleware strictly enforces this isolation on every request.
 
-## 🛠️ Technology Stack
+![Architecture Diagram](./docs/images/system-architecture.png)
 
-### **Frontend**
+## 📦 Installation & Setup
 
-- **React:** v18.x
-- **React Router Dom:** v6.x (Navigation)
-- **Bootstrap / React-Bootstrap:** (UI Styling)
-- **Axios:** (API Communication)
+### Prerequisites
+- Docker & Docker Compose installed.
 
-### **Backend**
+### ⚡ Quick Start (Docker)
 
-- **Node.js:** v18.x
-- **Express.js:** v4.x
-- **PostgreSQL:** v15 (Database)
-- **node-postgres (pg):** (DB Client)
-- **Bcrypt:** (Password Hashing)
-- **JSON Web Token (JWT):** (Auth)
+This is the recommended way to run the application.
 
-### **Infrastructure**
-
-- **Docker & Docker Compose:** Containerization and Orchestration.
-
----
-
-## 🏗️ Architecture Overview
-
-The application follows a **3-Tier Architecture**:
-
-1.  **Frontend (Client):** React SPA running on Port `3000`.
-2.  **Backend (API):** Express REST API running on Port `5000`.
-3.  **Database (Data):** PostgreSQL running on Port `5432`.
-
-**Multi-Tenancy Strategy:** Shared Database, Shared Schema. Isolation is enforced via a mandatory `tenant_id` column on all data tables (Users, Projects, Tasks).
-
----
-
-## 🚀 Installation & Setup
-
-### **Prerequisites**
-
-- Docker Desktop (installed and running)
-- Git
-
-### **Step-by-Step Setup**
-
-1.  **Clone the Repository**
-
+1.  **Clone the repository:**
     ```bash
-    git clone <repository-url>
-    cd Multi-Tenant-SaaS
+    git clone <repo-url>
+    cd multi-tenant-saas
     ```
 
-2.  **Start the Application**
-    Run the following command to build and start all services (Database, Backend, Frontend):
-
+2.  **Start the services:**
     ```bash
-    docker-compose up -d --build
+    docker-compose up -d
+    ```
+    *Note: This starts Postgres, Backend (Port 5000), and Frontend (Port 3000).*
+
+3.  **Wait for Initialization:**
+    The backend automatically runs database migrations and seeds initial data. You can verify it's ready by checking the health endpoint:
+    ```bash
+    curl http://localhost:5000/api/health
+    # Should return {"status":"ok", "database":"connected"}
     ```
 
-3.  **Verify Status**
-    Check if all containers are running:
+4.  **Access the Application:**
+    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-    ```bash
-    docker-compose ps
-    ```
+### 🔑 Test Credentials
 
-4.  **Access the App**
+The system is pre-seeded with the following accounts (from `submission.json`):
 
-    - **Frontend:** [http://localhost:3000](http://localhost:3000)
-    - **Backend Health Check:** [http://localhost:5000/api/health](http://localhost:5000/api/health)
+**1. Super Admin (System Wide)**
+- Email: `superadmin@system.com`
+- Password: `Admin@123`
 
-5.  **Automatic Seeding**
-    The database initializes automatically with a **Super Admin**, a **Demo Tenant**, and **Sample Data**.
-    - **Admin Login:** `admin@demo.com` / `Demo@123`
-    - **Super Admin:** `superadmin@system.com` / `Admin@123`
+**2. Tenant Admin (Demo Company)**
+- Email: `admin@demo.com`
+- Password: `Demo@123`
+- Subdomain: `demo`
 
----
+**3. Regular User (Demo Company)**
+- Email: `user1@demo.com`
+- Password: `User@123`
+- Subdomain: `demo`
 
-## 🔑 Environment Variables
+## 📚 Documentation
 
-These variables are configured in `docker-compose.yml`.
+- [API Documentation](./docs/API.md)
+- [Architecture & ERD](./docs/architecture.md)
+- [Research Document](./docs/research.md)
+- [Product Requirements (PRD)](./docs/PRD.md)
 
-| Variable            | Description                                   |
-| :------------------ | :-------------------------------------------- |
-| `POSTGRES_DB`       | Database name (default: `saas_db`)            |
-| `POSTGRES_USER`     | Database user (default: `postgres`)           |
-| `POSTGRES_PASSWORD` | Database password                             |
-| `JWT_SECRET`        | Secret key for signing tokens                 |
-| `FRONTEND_URL`      | URL for CORS policy (`http://localhost:3000`) |
+## 🧪 Testing
 
----
+To run the evaluation validation manually:
+1. Ensure services are running.
+2. Use the credentials in `submission.json` to verify login flows.
+3. Test RBAC by trying to access Admin routes as a regular User.
 
-## 📚 API Documentation
+## 📝 Environment Variables
 
-For full API details, please refer to [docs/API.md](./docs/API.md).
+The project uses the following environment variables (already configured in `docker-compose.yml` for dev):
 
-**Main Endpoints:**
-
-- `POST /api/auth/login` - User Login
-- `POST /api/auth/register-tenant` - Register New Organization
-- `GET /api/projects` - List Projects
-- `GET /api/projects/:id/tasks` - List Tasks for a Project
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`: Database credentials.
+- `JWT_SECRET`: Secret for signing tokens.
+- `FRONTEND_URL`: URL for CORS whitelisting.

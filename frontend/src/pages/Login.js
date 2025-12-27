@@ -25,8 +25,9 @@ const Login = () => {
       const res = await api.post("/auth/login", formData);
       const { token } = res.data.data;
 
-      // Store Token
+      // Store Token & User Info
       localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(res.data.data.user));
 
       // Decode to check role (optional, but good for debugging)
       const decoded = jwtDecode(token);

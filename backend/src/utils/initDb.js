@@ -8,16 +8,39 @@ const runMigrations = async () => {
   try {
     console.log("--- Starting Database Initialization ---");
 
+    // 0. Ensure migrations table exists
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS applied_migrations (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        applied_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
     // 1. Run Migrations
     const migrationDir = path.join(__dirname, "../../migrations");
     const files = fs.readdirSync(migrationDir).sort();
 
     for (const file of files) {
       if (file.endsWith(".sql")) {
-        const filePath = path.join(migrationDir, file);
-        const sql = fs.readFileSync(filePath, "utf8");
-        console.log(`Running migration: ${file}`);
-        await client.query(sql);
+        // Check if migration already applied
+        const check = await client.query(
+          "SELECT id FROM applied_migrations WHERE name = $1",
+          [file]
+        );
+
+        if (check.rows.length === 0) {
+          const filePath = path.join(migrationDir, file);
+          const sql = fs.readFileSync(filePath, "utf8");
+          console.log(`Running migration: ${file}`);
+          await client.query(sql);
+          
+          // Record migration
+          await client.query(
+            "INSERT INTO applied_migrations (name) VALUES ($1)",
+            [file]
+          );
+        }
       }
     }
 
