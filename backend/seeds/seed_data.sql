@@ -1,3 +1,7 @@
+-- NOTE: This file is for manual reference only.
+-- Automated seeding is handled by 'src/utils/initDb.js' which generates valid bcrypt hashes dynamically.
+-- Running this file manually requires generating valid bcrypt hashes for the passwords.
+
 -- Super Admin (Password: Admin@123)
 -- Hash: $2b$10$YCNqfN/iVz.aK/8j/8k.o.x/x/x/x (Need a valid hash for 'Admin@123')
 -- For simplicity in this dummy file, I'll use a placeholder hash or generate one in the JS seeder if possible.
