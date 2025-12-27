@@ -4,10 +4,9 @@ Base URL: `http://localhost:5000/api`
 
 ## 1. Authentication Module
 
-### **Register Tenant**
-
+### **1. Register Tenant**
 - **Endpoint:** `POST /auth/register-tenant`
-- **Description:** Register a new organization and admin user.
+- **Auth:** None
 - **Body:**
   ```json
   {
@@ -20,19 +19,18 @@ Base URL: `http://localhost:5000/api`
   ```
 - **Response (201):**
   ```json
-  { "success": true, "message": "Tenant registered successfully" }
+  { "success": true, "message": "Tenant registered successfully", "data": { ... } }
   ```
 
-### **Login**
-
+### **2. User Login**
 - **Endpoint:** `POST /auth/login`
-- **Description:** Authenticate user and receive JWT.
+- **Auth:** None
 - **Body:**
   ```json
   {
     "email": "admin@demo.com",
     "password": "Demo@123",
-    "tenantSubdomain": "demo" // Optional if email is unique
+    "tenantSubdomain": "demo"
   }
   ```
 - **Response (200):**
@@ -40,104 +38,121 @@ Base URL: `http://localhost:5000/api`
   { "success": true, "data": { "token": "jwt...", "user": { ... } } }
   ```
 
-### **Get Current User**
-
+### **3. Get Current User**
 - **Endpoint:** `GET /auth/me`
-- **Headers:** `Authorization: Bearer <token>`
+- **Auth:** Bearer Token
 - **Response (200):** Returns user and tenant details.
+
+### **4. Logout**
+- **Endpoint:** `POST /auth/logout`
+- **Auth:** Bearer Token
+- **Response (200):** `{ "success": true, "message": "Logged out successfully" }`
 
 ---
 
 ## 2. Tenant Management
 
-### **Get Tenant Details**
-
+### **5. Get Tenant Details**
 - **Endpoint:** `GET /tenants/:tenantId`
-- **Auth:** Required (Tenant Admin or Super Admin)
-- **Response:** Returns tenant info and stats (user count, project count).
+- **Auth:** Tenant Admin or Super Admin
+- **Response (200):** Returns tenant info and stats.
 
-### **List All Tenants**
+### **6. Update Tenant**
+- **Endpoint:** `PUT /tenants/:tenantId`
+- **Auth:** Tenant Admin (name only) / Super Admin (all)
+- **Body:** `{ "name": "New Name", "maxUsers": 50 }`
+- **Response (200):** Returns updated tenant.
 
+### **7. List All Tenants**
 - **Endpoint:** `GET /tenants`
-- **Auth:** Required (Super Admin ONLY)
-- **Response:** List of all registered tenants.
+- **Auth:** Super Admin ONLY
+- **Params:** `?page=1&limit=10&status=active`
+- **Response (200):** `{ "success": true, "data": { "tenants": [], "pagination": {} } }`
 
 ---
 
 ## 3. User Management
 
-### **Add User to Tenant**
-
+### **8. Add User to Tenant**
 - **Endpoint:** `POST /tenants/:tenantId/users`
-- **Auth:** Required (Tenant Admin)
+- **Auth:** Tenant Admin
 - **Body:**
   ```json
-  {
-    "email": "employee@demo.com",
-    "password": "User@123",
-    "fullName": "John Doe",
-    "role": "user"
-  }
+  { "email": "new@demo.com", "password": "pass", "fullName": "John", "role": "user" }
   ```
+- **Response (201):** Returns created user.
 
-### **List Tenant Users**
-
+### **9. List Tenant Users**
 - **Endpoint:** `GET /tenants/:tenantId/users`
-- **Auth:** Required
-- **Response:** List of users belonging to the tenant.
+- **Auth:** Tenant Member
+- **Params:** `?search=john&role=user`
+- **Response (200):** Returns list of users.
 
-### **Delete User**
+### **10. Update User**
+- **Endpoint:** `PUT /users/:userId`
+- **Auth:** Tenant Admin
+- **Body:** `{ "fullName": "John Updated", "role": "tenant_admin", "isActive": true }`
+- **Response (200):** Returns updated user.
 
+### **11. Delete User**
 - **Endpoint:** `DELETE /users/:userId`
-- **Auth:** Required (Tenant Admin)
+- **Auth:** Tenant Admin
+- **Response (200):** `{ "success": true, "message": "User deleted successfully" }`
 
 ---
 
 ## 4. Project Management
 
-### **Create Project**
-
+### **12. Create Project**
 - **Endpoint:** `POST /projects`
-- **Auth:** Required
-- **Body:**
-  ```json
-  {
-    "name": "New Website",
-    "description": "Redesign project",
-    "status": "active"
-  }
-  ```
+- **Auth:** Tenant Member
+- **Body:** `{ "name": "New Project", "description": "Desc" }`
+- **Response (201):** Returns created project.
 
-### **List Projects**
-
+### **13. List Projects**
 - **Endpoint:** `GET /projects`
-- **Auth:** Required
-- **Response:** Returns all projects for the current user's tenant.
+- **Auth:** Tenant Member
+- **Params:** `?status=active&search=website`
+- **Response (200):** Returns list of projects.
+
+### **14. Update Project**
+- **Endpoint:** `PUT /projects/:projectId`
+- **Auth:** Tenant Admin or Creator
+- **Body:** `{ "name": "Updated", "status": "archived" }`
+- **Response (200):** Returns updated project.
+
+### **15. Delete Project**
+- **Endpoint:** `DELETE /projects/:projectId`
+- **Auth:** Tenant Admin or Creator
+- **Response (200):** `{ "success": true, "message": "Project deleted successfully" }`
 
 ---
 
 ## 5. Task Management
 
-### **Create Task**
-
+### **16. Create Task**
 - **Endpoint:** `POST /projects/:projectId/tasks`
-- **Auth:** Required
+- **Auth:** Tenant Member
 - **Body:**
   ```json
-  {
-    "title": "Design Homepage",
-    "priority": "high"
-  }
+  { "title": "Fix Bug", "assignedTo": "uuid", "priority": "high", "dueDate": "2024-12-31" }
   ```
+- **Response (201):** Returns created task.
 
-### **List Project Tasks**
-
+### **17. List Project Tasks**
 - **Endpoint:** `GET /projects/:projectId/tasks`
-- **Auth:** Required
-- **Response:** Returns all tasks for the specified project.
+- **Auth:** Tenant Member
+- **Params:** `?status=todo&priority=high`
+- **Response (200):** Returns list of tasks.
 
-### **Update Task Status**
-
+### **18. Update Task Status**
 - **Endpoint:** `PATCH /tasks/:taskId/status`
-- **Auth:** Required
+- **Auth:** Tenant Member
 - **Body:** `{ "status": "completed" }`
+- **Response (200):** Returns updated task.
+
+### **19. Update Task**
+- **Endpoint:** `PUT /tasks/:taskId`
+- **Auth:** Tenant Member
+- **Body:** `{ "title": "New Title", "priority": "low" }`
+- **Response (200):** Returns updated task.
